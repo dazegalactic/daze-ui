@@ -1,0 +1,17 @@
+{
+  "name": "daze-library",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.21.4",
+    "typescript": "^5.4.5"
+  }
+}
