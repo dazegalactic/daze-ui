@@ -21,7 +21,7 @@ class TimeslotPickerComponent extends HTMLElement {
     async createSession() {
         try {
             const orderData = this.getAttribute('orderData') || '{}';
-            const response = await fetch(`https://${BACKEND}/daze-dev-71b6e/us-central1/create-session`, {
+            const response = await fetch(`${BACKEND}/daze-dev-71b6e/us-central1/createSession`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
