@@ -1,8 +1,8 @@
-const BACKEND = process.env.BACKEND_URL;
 class TimeslotPickerComponent extends HTMLElement {
     sessionId: string;
     allowedOrigin: string;
     shadowRoot: ShadowRoot;
+    backendUrl: string;
 
     constructor() {
         super();
@@ -10,6 +10,12 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 
     async connectedCallback() {
+        const url = this.getAttribute('backendUrl');
+        if (!url) {
+            console.error('backendUrl attribute is required');
+            return;
+        }
+        this.backendUrl = url;
         await this.createSession();
         window.addEventListener('message', this.handleMessage.bind(this));
     }
@@ -21,7 +27,7 @@ class TimeslotPickerComponent extends HTMLElement {
     async createSession() {
         try {
             const orderData = this.getAttribute('orderData') || '{}';
-            const response = await fetch(`${BACKEND}/daze-dev-71b6e/us-central1/createSession`, {
+            const response = await fetch(`${this.backendUrl}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -84,5 +90,4 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 }
 
-// Define the custom element
 customElements.define('timeslot-picker', TimeslotPickerComponent);
