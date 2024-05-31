@@ -1,1 +1,1 @@
-# WIP - This is UI library for Daze pikckups/delivery
+# WIP - This is UI library for Daze pickups/delivery
