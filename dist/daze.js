@@ -1,9 +1,86 @@
-(()=>{var w=Object.defineProperty;var u=(s,t,e)=>t in s?w(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var n=(s,t,e)=>u(s,typeof t!="symbol"?t+"":t,e);var c=(s,t,e)=>new Promise((i,r)=>{var h=o=>{try{a(e.next(o))}catch(d){r(d)}},g=o=>{try{a(e.throw(o))}catch(d){r(d)}},a=o=>o.done?i(o.value):Promise.resolve(o.value).then(h,g);a((e=e.apply(s,t)).next())});var l=class extends HTMLElement{constructor(){super();n(this,"sessionId");n(this,"allowedOrigin");n(this,"shadowRoot");n(this,"backendUrl");this.shadowRoot=this.attachShadow({mode:"open"})}connectedCallback(){return c(this,null,function*(){let e=this.getAttribute("backendUrl");if(!e){console.error("backendUrl attribute is required");return}this.backendUrl=e,yield this.createSession(),window.addEventListener("message",this.handleMessage.bind(this))})}disconnectedCallback(){window.removeEventListener("message",this.handleMessage.bind(this))}createSession(){return c(this,null,function*(){try{let e=this.getAttribute("orderData")||"{}",i=yield fetch(`${this.backendUrl}`,{method:"POST",headers:{"Content-Type":"application/json","x-version":"1.0.0"},body:e});if(!i.ok)throw new Error("Failed to create session");let r=yield i.json();this.sessionId=r.sessionId,this.allowedOrigin=r.url,this.render()}catch(e){console.error("Error creating session:",e)}})}render(){let e=`${this.allowedOrigin}`;this.shadowRoot.innerHTML=`
+"use strict";
+(() => {
+  var __async = (__this, __arguments, generator) => {
+    return new Promise((resolve, reject) => {
+      var fulfilled = (value) => {
+        try {
+          step(generator.next(value));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      var rejected = (value) => {
+        try {
+          step(generator.throw(value));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+      step((generator = generator.apply(__this, __arguments)).next());
+    });
+  };
+
+  // src/index.ts
+  var TimeslotPickerComponent = class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" });
+    }
+    connectedCallback() {
+      return __async(this, null, function* () {
+        console.log("TimeslotPickerComponent connected", "https://more-panther-striking.ngrok-free.app/daze-dev-71b6e/us-central1/createSession");
+        const url = "https://more-panther-striking.ngrok-free.app/daze-dev-71b6e/us-central1/createSession";
+        if (!url) {
+          console.error("backendUrl attribute is required");
+          return;
+        }
+        this.backendUrl = url;
+        this.sessionId = sessionStorage.getItem("sessionId") || void 0;
+        yield this.createOrUpdateSession();
+        window.addEventListener("message", this.handleMessage.bind(this));
+      });
+    }
+    disconnectedCallback() {
+      window.removeEventListener("message", this.handleMessage.bind(this));
+    }
+    createOrUpdateSession() {
+      return __async(this, null, function* () {
+        if (!this.backendUrl) {
+          throw new Error("backendUrl attribute is required");
+        }
+        try {
+          const orderData = this.getAttribute("orderData") || "{}";
+          const url = this.sessionId ? `${this.backendUrl}?sessionId=${this.sessionId}` : this.backendUrl;
+          const response = yield fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-version": "1.0.0"
+            },
+            body: orderData
+          });
+          if (!response.ok) {
+            throw new Error("Failed to create or update session");
+          }
+          const result = yield response.json();
+          this.sessionId = result.sessionId;
+          this.allowedOrigin = result.url;
+          this.renderIframe();
+        } catch (error) {
+          console.error("Error creating or updating session:", error);
+        }
+      });
+    }
+    renderIframe() {
+      const iframeSrc = `${this.allowedOrigin}`;
+      this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     display: block;
                     width: 100%;
                     height: 100%;
+                    position: relative;
                 }
                 iframe {
                     width: 100%;
@@ -11,5 +88,30 @@
                     border: none;
                 }
             </style>
-            <iframe src="${e}" id="timeslotPickerIframe"></iframe>
-        `}handleMessage(e){if(e.origin!==this.allowedOrigin){console.warn("Invalid origin:",e.origin);return}let i=new Function(`return ${this.getAttribute("onSuccess")}`)(),r=new Function(`return ${this.getAttribute("onError")}`)();e.data.type==="CONFIRMATION"?i&&i(e.data.timeslot):e.data.type==="ERROR"&&(console.error("Error selecting timeslot:",e.data.message),r&&r(e.data.message))}};customElements.define("timeslot-picker",l);})();
+            <iframe src="${iframeSrc}" id="timeslotPickerIframe"></iframe>
+        `;
+    }
+    handleMessage(event) {
+      if (event.origin !== this.allowedOrigin) {
+        console.warn("Invalid origin:", event.origin);
+        return;
+      }
+      const onSuccess = new Function(`return ${this.getAttribute("onSuccess")}`)();
+      const onError = new Function(`return ${this.getAttribute("onError")}`)();
+      if (event.data.type === "CONFIRMATION") {
+        if (onSuccess) {
+          onSuccess(event.data.timeslot);
+        }
+      } else if (event.data.type === "ERROR") {
+        console.error("Error selecting timeslot:", event.data.message);
+        if (onError) {
+          onError(event.data.message);
+        }
+      }
+    }
+  };
+  if (!customElements.get("timeslot-picker")) {
+    customElements.define("timeslot-picker", TimeslotPickerComponent);
+  }
+})();
+//# sourceMappingURL=daze.js.map

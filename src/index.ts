@@ -1,22 +1,28 @@
+import { DazeSessionResponse } from "./types/DazeApi";
+
 class TimeslotPickerComponent extends HTMLElement {
-    sessionId: string;
-    allowedOrigin: string;
-    shadowRoot: ShadowRoot;
-    backendUrl: string;
+    sessionId: string | undefined;
+    allowedOrigin: string | undefined;
+    backendUrl: string | undefined;
 
     constructor() {
         super();
-        this.shadowRoot = this.attachShadow({ mode: 'open' });
+        this.attachShadow({ mode: 'open' });
     }
 
     async connectedCallback() {
-        const url = this.getAttribute('backendUrl');
+        console.log('TimeslotPickerComponent connected', process.env.BACKEND_URL);
+        const url = process.env.BACKEND_URL ?? this.getAttribute('backendUrl');
         if (!url) {
             console.error('backendUrl attribute is required');
             return;
         }
         this.backendUrl = url;
-        await this.createSession();
+        this.sessionId = sessionStorage.getItem('sessionId') || undefined;
+
+
+        await this.createOrUpdateSession();
+
         window.addEventListener('message', this.handleMessage.bind(this));
     }
 
@@ -24,10 +30,14 @@ class TimeslotPickerComponent extends HTMLElement {
         window.removeEventListener('message', this.handleMessage.bind(this));
     }
 
-    async createSession() {
+    async createOrUpdateSession() {
+        if (!this.backendUrl) {
+            throw new Error('backendUrl attribute is required');
+        }
         try {
             const orderData = this.getAttribute('orderData') || '{}';
-            const response = await fetch(`${this.backendUrl}`, {
+            const url = this.sessionId ? `${this.backendUrl}?sessionId=${this.sessionId}` : this.backendUrl;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -37,27 +47,27 @@ class TimeslotPickerComponent extends HTMLElement {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to create session');
+                throw new Error('Failed to create or update session');
             }
 
-            const result = await response.json();
+            const result: DazeSessionResponse = await response.json();
             this.sessionId = result.sessionId;
             this.allowedOrigin = result.url;
 
-            this.render();
+            this.renderIframe(); 
         } catch (error) {
-            console.error('Error creating session:', error);
+            console.error('Error creating or updating session:', error);
         }
     }
-
-    render() {
+    renderIframe() {
         const iframeSrc = `${this.allowedOrigin}`;
-        this.shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <style>
                 :host {
                     display: block;
                     width: 100%;
                     height: 100%;
+                    position: relative;
                 }
                 iframe {
                     width: 100%;
@@ -69,7 +79,7 @@ class TimeslotPickerComponent extends HTMLElement {
         `;
     }
 
-    handleMessage(event) {
+    handleMessage(event: MessageEvent) {
         if (event.origin !== this.allowedOrigin) {
             console.warn('Invalid origin:', event.origin);
             return;
@@ -90,4 +100,6 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 }
 
-customElements.define('timeslot-picker', TimeslotPickerComponent);
+if (!customElements.get('timeslot-picker')) {
+    customElements.define('timeslot-picker', TimeslotPickerComponent);
+}
