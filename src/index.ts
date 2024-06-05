@@ -11,8 +11,9 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 
     async connectedCallback() {
-        console.log('TimeslotPickerComponent connected', process.env.BACKEND_URL);
-        const url = process.env.BACKEND_URL ?? this.getAttribute('backendUrl');
+        const backend = String(process.env.BACKEND_URL);
+        const url = backend?.length > 0 ? backend :  this.getAttribute('backendUrl');
+        console.log('TimeslotPickerComponent connected', url);
         if (!url) {
             console.error('backendUrl attribute is required');
             return;
