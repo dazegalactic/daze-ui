@@ -4,6 +4,7 @@ class TimeslotPickerComponent extends HTMLElement {
     sessionId: string | undefined;
     allowedOrigin: string | undefined;
     backendUrl: string | undefined;
+    iframeSrc: string | undefined;
 
     constructor() {
         super();
@@ -13,6 +14,7 @@ class TimeslotPickerComponent extends HTMLElement {
     async connectedCallback() {
         const backend = String(process.env.BACKEND_URL);
         const url = backend?.length > 0 ? backend :  this.getAttribute('backendUrl');
+        
         console.log('TimeslotPickerComponent connected', url);
         if (!url) {
             console.error('backendUrl attribute is required');
@@ -20,7 +22,6 @@ class TimeslotPickerComponent extends HTMLElement {
         }
         this.backendUrl = url;
         this.sessionId = sessionStorage.getItem('sessionId') || undefined;
-
 
         await this.createOrUpdateSession();
 
@@ -53,15 +54,17 @@ class TimeslotPickerComponent extends HTMLElement {
 
             const result: DazeSessionResponse = await response.json();
             this.sessionId = result.sessionId;
-            this.allowedOrigin = result.url;
+            this.iframeSrc = result.url;
+            this.allowedOrigin = new URL(result.url).origin;
 
             this.renderIframe(); 
         } catch (error) {
             console.error('Error creating or updating session:', error);
         }
     }
+
     renderIframe() {
-        const iframeSrc = `${this.allowedOrigin}`;
+        const iframeSrc = `${this.iframeSrc}`;
         this.shadowRoot!.innerHTML = `
             <style>
                 :host {
@@ -86,17 +89,18 @@ class TimeslotPickerComponent extends HTMLElement {
             return;
         }
 
-        const onSuccess = new Function(`return ${this.getAttribute('onSuccess')}`)();
-        const onError = new Function(`return ${this.getAttribute('onError')}`)();
-        if (event.data.type === 'CONFIRMATION') {
-            if (onSuccess) {
-                onSuccess(event.data.timeslot);
-            }
-        } else if (event.data.type === 'ERROR') {
-            console.error('Error selecting timeslot:', event.data.message);
-            if (onError) {
-                onError(event.data.message);
-            }
+        const type = event.data.type;
+
+        switch (type) {
+            case 'SUCCESS':
+                this.dispatchEvent(new CustomEvent('onSuccess', { detail: event.data.timeslot }));
+                break;
+            case 'ERROR':
+                this.dispatchEvent(new CustomEvent('onError', { detail: event.data.message }));
+                break;
+            default:
+                console.warn('Unknown message type:', type);
+        
         }
     }
 }
