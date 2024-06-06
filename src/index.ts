@@ -13,9 +13,7 @@ class TimeslotPickerComponent extends HTMLElement {
 
     async connectedCallback() {
         const backend = String(process.env.BACKEND_URL);
-        const url = backend?.length > 0 ? backend :  this.getAttribute('backendUrl');
-        
-        console.log('TimeslotPickerComponent connected', url);
+        const url = backend?.length > 0 ? backend : this.getAttribute('backendUrl');
         if (!url) {
             console.error('backendUrl attribute is required');
             return;
@@ -23,7 +21,7 @@ class TimeslotPickerComponent extends HTMLElement {
         this.backendUrl = url;
         this.sessionId = sessionStorage.getItem('sessionId') || undefined;
 
-        await this.createOrUpdateSession();
+        await this.createOrUpdateSession(this.getAttribute('orderData') || '{}');
 
         window.addEventListener('message', this.handleMessage.bind(this));
     }
@@ -32,14 +30,17 @@ class TimeslotPickerComponent extends HTMLElement {
         window.removeEventListener('message', this.handleMessage.bind(this));
     }
 
-    async createOrUpdateSession() {
+
+    async createOrUpdateSession(orderData: string) {
         if (!this.backendUrl) {
-            throw new Error('backendUrl attribute is required');
+            console.error('backendUrl attribute is missing');
+            return;
         }
+
         try {
-            const orderData = this.getAttribute('orderData') || '{}';
             const url = this.sessionId ? `${this.backendUrl}?sessionId=${this.sessionId}` : this.backendUrl;
             const response = await fetch(url, {
+
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,33 +55,36 @@ class TimeslotPickerComponent extends HTMLElement {
 
             const result: DazeSessionResponse = await response.json();
             this.sessionId = result.sessionId;
+            sessionStorage.setItem('sessionId', this.sessionId);
             this.iframeSrc = result.url;
             this.allowedOrigin = new URL(result.url).origin;
 
-            this.renderIframe(); 
+            this.dispatchEvent(new CustomEvent('onSessionIdChange', { detail: { sessionId: this.sessionId } }));
+            this.renderIframe();
         } catch (error) {
             console.error('Error creating or updating session:', error);
         }
     }
 
     renderIframe() {
-        const iframeSrc = `${this.iframeSrc}`;
-        this.shadowRoot!.innerHTML = `
-            <style>
-                :host {
-                    display: block;
-                    width: 100%;
-                    height: 100%;
-                    position: relative;
-                }
-                iframe {
-                    width: 100%;
-                    height: 100%;
-                    border: none;
-                }
-            </style>
-            <iframe src="${iframeSrc}" id="timeslotPickerIframe"></iframe>
-        `;
+        if (this.iframeSrc) {
+            this.shadowRoot!.innerHTML = `
+                <style>
+                    :host {
+                        display: block;
+                        width: 100%;
+                        height: 100%;
+                        position: relative;
+                    }
+                    iframe {
+                        width: 100%;
+                        height: 100%;
+                        border: none;
+                    }
+                </style>
+                <iframe src="${this.iframeSrc}" id="timeslotPickerIframe"></iframe>
+            `;
+        }
     }
 
     handleMessage(event: MessageEvent) {
@@ -89,9 +93,7 @@ class TimeslotPickerComponent extends HTMLElement {
             return;
         }
 
-        const type = event.data.type;
-
-        switch (type) {
+        switch (event.data.type) {
             case 'SUCCESS':
                 this.dispatchEvent(new CustomEvent('onSuccess', { detail: event.data.timeslot }));
                 break;
@@ -99,8 +101,7 @@ class TimeslotPickerComponent extends HTMLElement {
                 this.dispatchEvent(new CustomEvent('onError', { detail: event.data.message }));
                 break;
             default:
-                console.warn('Unknown message type:', type);
-        
+                console.warn('Unknown message type:', event.data.type);
         }
     }
 }
