@@ -9,7 +9,7 @@ const isDev = process.env.NODE_ENV === 'development';
 const config = {
     entryPoints: ['src/index.ts'],
     bundle: true,
-    outfile: 'dist/daze.js',
+    outfile: isDev? 'dist/dev-daze.js' : 'dist/daze.js',
     platform: 'browser',
     target: ['es6'],
     tsconfig: 'tsconfig.json',
