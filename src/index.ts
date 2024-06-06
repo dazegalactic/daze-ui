@@ -62,6 +62,8 @@ class TimeslotPickerComponent extends HTMLElement {
             this.dispatchEvent(new CustomEvent('onSessionIdChange', { detail: { sessionId: this.sessionId } }));
             this.renderIframe();
         } catch (error) {
+            const message = error instanceof Error ? error.message : 'Could not get Daze session';
+            this.dispatchEvent(new CustomEvent('onError', { detail: message }));
             console.error('Error creating or updating session:', error);
         }
     }
