@@ -1,5 +1,4 @@
 import { DazeSessionResponse } from "./types/DazeApi";
-
 class TimeslotPickerComponent extends HTMLElement {
     sessionId: string | undefined;
     allowedOrigin: string | undefined;
@@ -12,6 +11,7 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 
     async connectedCallback() {
+        console.log('TimeslotPickerComponent connected');
         const backend = String(process.env.BACKEND_URL);
         const url = backend?.length > 0 ? backend : this.getAttribute('backendUrl');
         if (!url) {
@@ -27,9 +27,9 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 
     disconnectedCallback() {
+        console.log('TimeslotPickerComponent disconnected');
         window.removeEventListener('message', this.handleMessage.bind(this));
     }
-
 
     async createOrUpdateSession(orderData: string) {
         if (!this.backendUrl) {
@@ -40,7 +40,6 @@ class TimeslotPickerComponent extends HTMLElement {
         try {
             const url = this.sessionId ? `${this.backendUrl}?sessionId=${this.sessionId}` : this.backendUrl;
             const response = await fetch(url, {
-
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,6 +53,11 @@ class TimeslotPickerComponent extends HTMLElement {
             }
 
             const result: DazeSessionResponse = await response.json();
+            if (this.sessionId !== result.sessionId) {
+                console.log(`Created session with id: ${result.sessionId}`);
+            } else {
+                console.log(`Updated session with id: ${result.sessionId}`);
+            }
             this.sessionId = result.sessionId;
             sessionStorage.setItem('sessionId', this.sessionId);
             this.iframeSrc = result.url;
