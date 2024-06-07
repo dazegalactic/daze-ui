@@ -1,9 +1,11 @@
 import { DazeSessionResponse } from "./types/DazeApi";
+
 class TimeslotPickerComponent extends HTMLElement {
     sessionId: string | undefined;
     allowedOrigin: string | undefined;
     backendUrl: string | undefined;
     iframeSrc: string | undefined;
+    isInitialized: boolean = false;
 
     constructor() {
         super();
@@ -11,7 +13,7 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 
     async connectedCallback() {
-        console.log('TimeslotPickerComponent connected');
+        this.isInitialized = true;
         const backend = String(process.env.BACKEND_URL);
         const url = backend?.length > 0 ? backend : this.getAttribute('backendUrl');
         if (!url) {
@@ -22,18 +24,19 @@ class TimeslotPickerComponent extends HTMLElement {
         this.sessionId = sessionStorage.getItem('sessionId') || undefined;
 
         await this.createOrUpdateSession(this.getAttribute('orderData') || '{}');
-
-        window.addEventListener('message', this.handleMessage.bind(this));
+        if (this.isInitialized) {
+            window.addEventListener('message', this.handleMessage.bind(this));
+        }
     }
 
     disconnectedCallback() {
-        console.log('TimeslotPickerComponent disconnected');
+        this.isInitialized = false;
         window.removeEventListener('message', this.handleMessage.bind(this));
     }
 
     async createOrUpdateSession(orderData: string) {
-        if (!this.backendUrl) {
-            console.error('backendUrl attribute is missing');
+        if (!this.backendUrl || !this.isInitialized) {
+            console.error('backendUrl attribute is missing or component is not connected');
             return;
         }
 
@@ -52,6 +55,8 @@ class TimeslotPickerComponent extends HTMLElement {
                 throw new Error('Failed to create or update session');
             }
 
+            if (!this.isInitialized) return;
+
             const result: DazeSessionResponse = await response.json();
             if (this.sessionId !== result.sessionId) {
                 console.log(`Created session with id: ${result.sessionId}`);
@@ -66,6 +71,7 @@ class TimeslotPickerComponent extends HTMLElement {
             this.dispatchEvent(new CustomEvent('onSessionIdChange', { detail: { sessionId: this.sessionId } }));
             this.renderIframe();
         } catch (error) {
+            if (!this.isInitialized) return;
             const message = error instanceof Error ? error.message : 'Could not get Daze session';
             this.dispatchEvent(new CustomEvent('onError', { detail: message }));
             console.error('Error creating or updating session:', error);
@@ -73,28 +79,28 @@ class TimeslotPickerComponent extends HTMLElement {
     }
 
     renderIframe() {
-        if (this.iframeSrc) {
-            this.shadowRoot!.innerHTML = `
-                <style>
-                    :host {
-                        display: block;
-                        width: 100%;
-                        height: 100%;
-                        position: relative;
-                    }
-                    iframe {
-                        width: 100%;
-                        height: 100%;
-                        border: none;
-                    }
-                </style>
-                <iframe src="${this.iframeSrc}" id="timeslotPickerIframe"></iframe>
-            `;
-        }
+        if (!this.isInitialized || !this.iframeSrc) return;
+
+        this.shadowRoot!.innerHTML = `
+            <style>
+                :host {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    position: relative;
+                }
+                iframe {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }
+            </style>
+            <iframe src="${this.iframeSrc}" id="timeslotPickerIframe"></iframe>
+        `;
     }
 
     handleMessage(event: MessageEvent) {
-        if (event.origin !== this.allowedOrigin) {
+        if (!this.isInitialized || event.origin !== this.allowedOrigin) {
             console.warn('Invalid origin:', event.origin);
             return;
         }
