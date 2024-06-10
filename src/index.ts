@@ -24,14 +24,12 @@ class TimeslotPickerComponent extends HTMLElement {
         this.sessionId = sessionStorage.getItem('sessionId') || undefined;
 
         await this.createOrUpdateSession(this.getAttribute('orderData') || '{}');
-        if (this.isInitialized) {
-            window.addEventListener('message', this.handleMessage.bind(this));
-        }
+        window.addEventListener('message', this.handleMessage.bind(this), false);
     }
 
     disconnectedCallback() {
         this.isInitialized = false;
-        window.removeEventListener('message', this.handleMessage.bind(this));
+        window.removeEventListener('message', this.handleMessage.bind(this), false);
     }
 
     async createOrUpdateSession(orderData: string) {
