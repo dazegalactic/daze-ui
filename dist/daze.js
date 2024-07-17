@@ -1,16 +1,16 @@
-"use strict";(()=>{var a=(c,e,s)=>new Promise((i,n)=>{var h=t=>{try{r(s.next(t))}catch(o){n(o)}},l=t=>{try{r(s.throw(t))}catch(o){n(o)}},r=t=>t.done?i(t.value):Promise.resolve(t.value).then(h,l);r((s=s.apply(c,e)).next())});var d=class extends HTMLElement{constructor(){super(),this.attachShadow({mode:"open"})}connectedCallback(){return a(this,null,function*(){let e="",s=(e==null?void 0:e.length)>0?e:this.getAttribute("backendUrl");if(!s){console.error("backendUrl attribute is required");return}this.backendUrl=s,this.sessionId=sessionStorage.getItem("sessionId")||void 0,yield this.createOrUpdateSession(this.getAttribute("orderData")||"{}"),window.addEventListener("message",this.handleMessage.bind(this))})}disconnectedCallback(){window.removeEventListener("message",this.handleMessage.bind(this))}createOrUpdateSession(e){return a(this,null,function*(){if(!this.backendUrl){console.error("backendUrl attribute is missing");return}try{let s=this.sessionId?`${this.backendUrl}?sessionId=${this.sessionId}`:this.backendUrl,i=yield fetch(s,{method:"POST",headers:{"Content-Type":"application/json","x-version":"1.0.0"},body:e});if(!i.ok)throw new Error("Failed to create or update session");let n=yield i.json();this.sessionId=n.sessionId,sessionStorage.setItem("sessionId",this.sessionId),this.iframeSrc=n.url,this.allowedOrigin=new URL(n.url).origin,this.dispatchEvent(new CustomEvent("onSessionIdChange",{detail:{sessionId:this.sessionId}})),this.renderIframe()}catch(s){let i=s instanceof Error?s.message:"Could not get Daze session";this.dispatchEvent(new CustomEvent("onError",{detail:i})),console.error("Error creating or updating session:",s)}})}renderIframe(){this.iframeSrc&&(this.shadowRoot.innerHTML=`
-                <style>
-                    :host {
-                        display: block;
-                        width: 100%;
-                        height: 100%;
-                        position: relative;
-                    }
-                    iframe {
-                        width: 100%;
-                        height: 100%;
-                        border: none;
-                    }
-                </style>
-                <iframe src="${this.iframeSrc}" id="timeslotPickerIframe"></iframe>
-            `)}handleMessage(e){if(e.origin!==this.allowedOrigin){console.warn("Invalid origin:",e.origin);return}switch(e.data.type){case"SUCCESS":this.dispatchEvent(new CustomEvent("onSuccess",{detail:e.data.timeslot}));break;case"ERROR":this.dispatchEvent(new CustomEvent("onError",{detail:e.data.message}));break;default:console.warn("Unknown message type:",e.data.type)}}};customElements.get("timeslot-picker")||customElements.define("timeslot-picker",d);})();
+"use strict";(()=>{var l=(m,g,e)=>new Promise((i,r)=>{var a=s=>{try{o(e.next(s))}catch(t){r(t)}},d=s=>{try{o(e.throw(s))}catch(t){r(t)}},o=s=>s.done?i(s.value):Promise.resolve(s.value).then(a,d);o((e=e.apply(m,g)).next())});var c=class extends HTMLElement{constructor(){super();this.isInitialized=!1;this.attachShadow({mode:"open"})}connectedCallback(){return l(this,null,function*(){this.isInitialized=!0;let e="http://localhost:5001/daze-dev-71b6e/us-central1/createSession",i=(e==null?void 0:e.length)>0?e:this.getAttribute("backendUrl");if(!i){console.error("backendUrl attribute is required");return}this.backendUrl=i,this.sessionId=sessionStorage.getItem("sessionId")||void 0,yield this.createOrUpdateSession(this.getAttribute("orderData")||"{}"),window.addEventListener("message",this.handleMessage.bind(this),!1)})}disconnectedCallback(){this.isInitialized=!1,window.removeEventListener("message",this.handleMessage.bind(this),!1)}createOrUpdateSession(e){return l(this,null,function*(){var i,r,a,d,o,s;if(!this.backendUrl||!this.isInitialized){console.error("backendUrl attribute is missing or component is not connected");return}try{let t=this.sessionId?`${this.backendUrl}?sessionId=${this.sessionId}`:this.backendUrl,h=yield fetch(t,{method:"POST",headers:{"Content-Type":"application/json","x-version":"1.0.0"},body:e});if(!h.ok)throw new Error("Failed to create or update session");this.colorScheme=this.getAttribute("colorScheme")||void 0,this.themeColor=(r=(i=this.getAttribute("themeColor"))==null?void 0:i.replace("#",""))!=null?r:void 0,this.themeColorDark=(d=(a=this.getAttribute("themeColorDark"))==null?void 0:a.replace("#",""))!=null?d:void 0,this.themeColorLight=(s=(o=this.getAttribute("themeColorLight"))==null?void 0:o.replace("#",""))!=null?s:void 0;let u=!!this.colorScheme,f=this.colorScheme==="custom"&&!!(this.themeColor&&this.themeColorDark&&this.themeColorLight);if(!this.isInitialized)return;let n=yield h.json();this.sessionId!==n.sessionId?console.log(`Created session with id: ${n.sessionId}`):console.log(`Updated session with id: ${n.sessionId}`),this.sessionId=n.sessionId,sessionStorage.setItem("sessionId",this.sessionId),this.iframeSrc=n.url,u&&(this.iframeSrc+=`&colorScheme=${this.colorScheme}`),f&&(this.iframeSrc+=`&themeColor=${this.themeColor}&themeColorDark=${this.themeColorDark}&themeColorLight=${this.themeColorLight}`),this.allowedOrigin=new URL(n.url).origin,this.dispatchEvent(new CustomEvent("onSessionIdChange",{detail:{sessionId:this.sessionId}})),this.renderIframe()}catch(t){if(!this.isInitialized)return;let h=t instanceof Error?t.message:"Could not get Daze session";this.dispatchEvent(new CustomEvent("onError",{detail:h})),console.error("Error creating or updating session:",t)}})}renderIframe(){!this.isInitialized||!this.iframeSrc||(this.shadowRoot.innerHTML=`
+            <style>
+                :host {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    position: relative;
+                }
+                iframe {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }
+            </style>
+            <iframe src="${this.iframeSrc}" id="timeslotPickerIframe"></iframe>
+        `)}handleMessage(e){if(!this.isInitialized||e.origin!==this.allowedOrigin){console.warn("Invalid origin:",e.origin);return}switch(e.data.type){case"SUCCESS":this.dispatchEvent(new CustomEvent("onSuccess",{detail:e.data.timeslot}));break;case"ERROR":this.dispatchEvent(new CustomEvent("onError",{detail:e.data.message}));break;default:console.warn("Unknown message type:",e.data.type)}}};customElements.get("timeslot-picker")||customElements.define("timeslot-picker",c);})();
