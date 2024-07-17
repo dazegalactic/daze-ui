@@ -5,6 +5,10 @@ class TimeslotPickerComponent extends HTMLElement {
     allowedOrigin: string | undefined;
     backendUrl: string | undefined;
     iframeSrc: string | undefined;
+    colorScheme: string | undefined;
+    themeColor: string | undefined;
+    themeColorDark: string | undefined;
+    themeColorLight: string | undefined;
 
     constructor() {
         super();
@@ -53,10 +57,24 @@ class TimeslotPickerComponent extends HTMLElement {
                 throw new Error('Failed to create or update session');
             }
 
+            this.colorScheme = this.getAttribute('colorScheme') || undefined;
+            this.themeColor = this.getAttribute('themeColor')?.replace('#', '') ?? undefined;
+            this.themeColorDark = this.getAttribute('themeColorDark')?.replace('#', '') ?? undefined;
+            this.themeColorLight = this.getAttribute('themeColorLight')?.replace('#', '') ?? undefined;
+
+            const setColorScheme = Boolean(this.colorScheme);
+            const setCustomThemeColors = this.colorScheme === "custom" && Boolean(this.themeColor && this.themeColorDark && this.themeColorLight);
+
             const result: DazeSessionResponse = await response.json();
             this.sessionId = result.sessionId;
             sessionStorage.setItem('sessionId', this.sessionId);
-            this.iframeSrc = result.url;
+            this.iframeSrc = result.url
+            if (setColorScheme) {
+                this.iframeSrc += `&colorScheme=${this.colorScheme}`;
+            }
+            if (setCustomThemeColors) {
+                this.iframeSrc += `&themeColor=${this.themeColor}&themeColorDark=${this.themeColorDark}&themeColorLight=${this.themeColorLight}`;
+            }
             this.allowedOrigin = new URL(result.url).origin;
 
             this.dispatchEvent(new CustomEvent('onSessionIdChange', { detail: { sessionId: this.sessionId } }));
