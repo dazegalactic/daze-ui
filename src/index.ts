@@ -10,6 +10,7 @@ class TimeslotPickerComponent extends HTMLElement {
     themeColorDark: string | undefined;
     themeColorLight: string | undefined;
     isInitialized: boolean = false;
+    testMode: boolean = false;
 
     constructor() {
         super();
@@ -18,10 +19,21 @@ class TimeslotPickerComponent extends HTMLElement {
 
     async connectedCallback() {
         this.isInitialized = true;
-        const backend = String(process.env.BACKEND_URL);
-        const url = backend?.length > 0 ? backend : this.getAttribute('backendUrl');
+        const isTestMode = this.getAttribute('testMode');
+        if (isTestMode) {
+            console.log('Loading Daze timeslots in test mode - connecting to Daze Preview server');
+            this.testMode = true;
+        }
+        const defaultBackend = String(process.env.BACKEND_URL_PROD);
+        const previewBackend = String(process.env.BACKEND_URL_PREVIEW);
+        const customBackend = this.getAttribute('backendUrl');
+        if (defaultBackend?.length === 0 || previewBackend.length === 0) {
+            console.error('BACKEND_URL and PREVIEW_BACKEND_URL environment variables are required');
+            return;
+        }
+        const url = isTestMode ? previewBackend : customBackend || defaultBackend;
         if (!url) {
-            console.error('backendUrl attribute is required');
+            console.error('Error setting backend url');
             return;
         }
         this.backendUrl = url;
@@ -68,10 +80,12 @@ class TimeslotPickerComponent extends HTMLElement {
             if (!this.isInitialized) return;
 
             const result: DazeSessionResponse = await response.json();
-            if (this.sessionId !== result.sessionId) {
-                console.log(`Created session with id: ${result.sessionId}`);
-            } else {
-                console.log(`Updated session with id: ${result.sessionId}`);
+            if (this.testMode) {
+                if (this.sessionId !== result.sessionId) {
+                    console.log(`New Daze session id: ${result.sessionId}`);
+                } else {
+                    console.log(`Updated session with id: ${result.sessionId}`);
+                }
             }
             this.sessionId = result.sessionId;
             sessionStorage.setItem('sessionId', this.sessionId);
