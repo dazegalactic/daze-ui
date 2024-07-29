@@ -16,7 +16,8 @@ const config = {
     sourcemap: isDev,
     minify: !isDev,
     define: {
-        'process.env.BACKEND_URL': JSON.stringify(process.env.BACKEND_URL || ''),
+        'process.env.BACKEND_URL_PROD': JSON.stringify(process.env.BACKEND_URL_PROD || ''),
+        'process.env.BACKEND_URL_PREVIEW': JSON.stringify(process.env.BACKEND_URL_PREVIEW || ''),
     },
     loader: {
         '.ts': 'ts',
