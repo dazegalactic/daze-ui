@@ -36,6 +36,9 @@ class TimeslotPickerComponent extends HTMLElement {
             console.error('Error setting backend url');
             return;
         }
+        if (url === customBackend) {
+            console.log('Using custom Daze backend URL:', url);
+        }
         this.backendUrl = url;
         this.sessionId = sessionStorage.getItem('sessionId') || undefined;
 
@@ -84,7 +87,7 @@ class TimeslotPickerComponent extends HTMLElement {
                 if (this.sessionId !== result.sessionId) {
                     console.log(`New Daze session id: ${result.sessionId}`);
                 } else {
-                    console.log(`Updated session with id: ${result.sessionId}`);
+                    console.log(`Updated Daze session with id: ${result.sessionId}`);
                 }
             }
             this.sessionId = result.sessionId;
@@ -131,7 +134,7 @@ class TimeslotPickerComponent extends HTMLElement {
 
     handleMessage(event: MessageEvent) {
         if (!this.isInitialized || event.origin !== this.allowedOrigin) {
-            console.warn('Invalid origin:', event.origin);
+            console.warn('Daze iframe: Invalid event origin:', event.origin);
             return;
         }
 
